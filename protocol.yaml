@@ -1,0 +1,73 @@
+protocol:
+  name: "Generic_EV_OneWire"
+  version: "1.0.0"
+  description: "某品牌二轮车一线通/485通信协议标准"
+  author: "R&D-Team"
+  date: "2026-09-07"
+
+physical_layer:
+  interface: "UART_Single_Wire_Half_Duplex"
+  baudrate: 9600
+  databits: 8
+  parity: "E"
+  stopbits: 1
+  voltage_level: "3.3V"
+  inverted: false         # 充电机侧需配置为 true
+
+framing:
+  preamble: "FEFEFEFE"
+  header: "68"
+  delimiter: "68"
+  tail: "16"
+  length_type: "explicit"
+  length_offset: 5
+  length_includes: "payload_only"
+  checksum:
+    algorithm: "sum8_mod256"
+    range: "header_to_payload_end"
+  obfuscation:
+    type: "byte_add"
+    operand: "0x33"       # 物理层发送逐字节+0x33, 接收需-0x33
+
+participants:
+  - name: "Dashboard_ECU"
+    address: "20DF"
+    role: "Master"
+  - name: "BMS_Battery"
+    address: "31CE"
+    role: "Slave"
+  - name: "Charger"
+    address: "35CA"
+    role: "Sniffer_Broadcast"
+
+fields:
+  - name: "SOC"
+    offset: 51
+    length: 1
+    type: "uint8"
+    scale: 1.0
+    offset_val: 0.0
+    unit: "%"
+    description: "当前剩余电量百分比"
+
+  - name: "Charge_Time_Remaining"
+    offset: 54
+    length: 1
+    type: "uint8"
+    scale: 0.1
+    offset_val: 0.0
+    unit: "hour"
+    description: "充满剩余预估时间, 分辨率6分钟/LSB"
+
+  - name: "Cell_Temp_1"
+    offset: 55
+    length: 1
+    type: "int8"
+    scale: 1.0
+    offset_val: 0.0
+    unit: "degC"
+    description: "第1路电芯温度传感器, 补码形式"
+
+golden_sample:
+  raw_hex: "FEFEFEFE6831CE688220...CS16"
+  decoded_description: "标准室温静置状态下的真实应答帧全量样本"
